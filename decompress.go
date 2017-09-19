@@ -28,6 +28,16 @@ func newReader(r io.Reader, inlen int) *reader {
 	return in
 }
 
+func (in *reader) curLenChk() {
+	if len(in.cur) == 0 {
+		in.Rebuffer()
+		if len(in.cur) == 0 {
+			in.Err = io.EOF
+			return
+		}
+	}
+}
+
 // Read more data from the underlying reader and put it into the buffer.
 // Also makes sure there is always at least 32 bytes in the buffer, so that
 // in the main loop we can avoid checking for the end of buffer.
@@ -85,12 +95,14 @@ func (in *reader) ReadAppend(out *[]byte, n int) {
 }
 
 func (in *reader) ReadU8() (ch byte) {
+	in.curLenChk()
 	ch = in.cur[0]
 	in.cur = in.cur[1:]
 	return
 }
 
 func (in *reader) ReadU16() int {
+	in.curLenChk()
 	b0 := in.cur[0]
 	b1 := in.cur[1]
 	in.cur = in.cur[2:]
